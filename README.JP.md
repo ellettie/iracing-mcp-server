@@ -40,17 +40,13 @@ iRacingのテレメトリデータとゲーム機能にアクセスするため�
 
 ## 使用方法
 
-### 1. インストール
-```bash
-uv tool install
-```
-
-### 2. mcp.jsonの設定
+### 1. mcp.jsonの設定
 ```json
 {
     "mcpServers": {
         "iracing-mcp-server": {
-            "command": "iracing-mcp"
+            "command": "uvx",
+            "args":["iracing-mcp-server"]
         }
     }
 }

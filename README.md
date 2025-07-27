@@ -40,17 +40,13 @@ This project provides real-time telemetry data, leaderboard information, camera 
 
 ## Usage
 
-### 1. Installation
-```bash
-uv tool install
-```
-
-### 2. Configure mcp.json
+### 1. Configure mcp.json
 ```json
 {
     "mcpServers": {
         "iracing-mcp-server": {
-            "command": "iracing-mcp"
+            "command": "uvx",
+            "args":["iracing-mcp-server"]
         }
     }
 }
