@@ -20,7 +20,7 @@ dependencies = [
 ]
 
 [project.scripts]
-iracing-mcp = "iracing_mcp_server:main"
+iracing-mcp-server = "iracing_mcp_server:main"
 
 [build-system]
 requires = ["hatchling"]
