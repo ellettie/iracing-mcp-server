@@ -66,7 +66,7 @@ def _bitmask_names(enum_cls, mask: int) -> list[str]:
 
 def with_iracing(fn):
     @wraps(fn)
-    def wrapper(*args, **kwargs):
+    async def wrapper(*args, **kwargs):
         ctx: Context | None = args[0] if args else None
 
         if not ir.is_initialized or not ir.is_connected:
@@ -74,23 +74,23 @@ def with_iracing(fn):
                 ir.startup()
             except Exception as e:
                 if ctx:
-                    ctx.error(f"failed to startup irsdk: {e}")
+                    await ctx.error(f"failed to startup irsdk: {e}")
                 raise RuntimeError(f"failed to startup irsdk: {e}")
             if not ir.is_connected:
                 if ctx:
-                    ctx.error("iRacing is not connected")
+                    await ctx.error("iRacing is not connected")
                 raise RuntimeError("iRacing is not connected")
         try:
             ir.freeze_var_buffer_latest()
         except Exception as e:
             if ctx:
-                ctx.error(f"freeze failed: {e}")
+                await ctx.error(f"freeze failed: {e}")
             raise RuntimeError(f"freeze failed: {e}")
         try:
-            return fn(*args, **kwargs)
+            return await fn(*args, **kwargs)
         except Exception as e:
             if ctx:
-                ctx.error(f"failed to call {fn.__name__}: {e}")
+                await ctx.error(f"failed to call {fn.__name__}: {e}")
             raise
 
     return wrapper
@@ -99,7 +99,7 @@ def with_iracing(fn):
 # ====== Tools ======
 @mcp.tool()
 @with_iracing
-def get_telemetry_values(
+async def get_telemetry_values(
     ctx: Context,
     names: list[str] | None = Field(
         None,
@@ -113,7 +113,7 @@ def get_telemetry_values(
     Returns:
         dict: telemetry values
     """
-    ctx.info(f"get_telemetry_values: {names}")
+    await ctx.info(f"get_telemetry_values: {names}")
     result = {}
     if names is None:
         names = ir.var_headers_names
@@ -127,66 +127,66 @@ def get_telemetry_values(
 
 @mcp.tool()
 @with_iracing
-def get_telemetry_names(ctx: Context) -> list[str]:
+async def get_telemetry_names(ctx: Context) -> list[str]:
     """
     get telemetry names
 
     Returns:
         list[str]: telemetry names
     """
-    ctx.info("get_telemetry_names")
+    await ctx.info("get_telemetry_names")
     return ir.var_headers_names
 
 
 @mcp.tool()
 @with_iracing
-def get_driver_info(ctx: Context) -> dict:
+async def get_driver_info(ctx: Context) -> dict:
     """
     get driver info
 
     Returns:
         dict: driver info
     """
-    ctx.info("get_driver_info")
-    return ir["DriverInfo"]
+    await ctx.info("get_driver_info")
+    return dict(ir["DriverInfo"])
 
 
 @mcp.tool()
 @with_iracing
-def get_session_info(ctx: Context) -> dict:
+async def get_session_info(ctx: Context) -> dict:
     """
     get session info
 
     Returns:
         dict: session info
     """
-    ctx.info("get_session_info")
-    return ir["SessionInfo"]
+    await ctx.info("get_session_info")
+    return dict(ir["SessionInfo"])
 
 
 @mcp.tool()
 @with_iracing
-def get_weekend_info(ctx: Context) -> dict:
+async def get_weekend_info(ctx: Context) -> dict:
     """
     get weekend info
 
     Returns:
         dict: weekend info
     """
-    ctx.info("get_weekend_info")
-    return ir["WeekendInfo"]
+    await ctx.info("get_weekend_info")
+    return dict(ir["WeekendInfo"])
 
 
 @mcp.tool()
 @with_iracing
-def get_qualify_results_info(ctx: Context) -> list[dict]:
+async def get_qualify_results_info(ctx: Context) -> list[dict]:
     """
     get qualify results info
 
     Returns:
         list[dict]: qualify results info
     """
-    ctx.info("get_qualify_results_info")
+    await ctx.info("get_qualify_results_info")
     src = ir["QualifyResultsInfo"]["Results"]
     out: list[dict] = []
     for row in src:
@@ -201,14 +201,14 @@ def get_qualify_results_info(ctx: Context) -> list[dict]:
 
 @mcp.tool()
 @with_iracing
-def get_camera_info(ctx: Context) -> list[dict]:
+async def get_camera_info(ctx: Context) -> list[dict]:
     """
     get camera info
 
     Returns:
         list[dict]: camera info
     """
-    ctx.info("get_camera_info")
+    await ctx.info("get_camera_info")
     cam_groups = [
         {"GroupNum": x["GroupNum"], "GroupName": x["GroupName"]}
         for x in ir["CameraInfo"]["Groups"]
@@ -218,33 +218,33 @@ def get_camera_info(ctx: Context) -> list[dict]:
 
 @mcp.tool()
 @with_iracing
-def get_radio_info(ctx: Context) -> dict:
+async def get_radio_info(ctx: Context) -> dict:
     """
     get radio info
 
     Returns:
         dict: radio info
     """
-    ctx.info("get_radio_info")
-    return ir["RadioInfo"]
+    await ctx.info("get_radio_info")
+    return dict(ir["RadioInfo"])
 
 
 @mcp.tool()
 @with_iracing
-def get_split_time_info(ctx: Context) -> dict:
+async def get_split_time_info(ctx: Context) -> dict:
     """
     Retrieves split time information for each sector of the track.
 
     Returns:
         dict: split time info
     """
-    ctx.info("get_split_time_info")
-    return ir["SplitTimeInfo"]
+    await ctx.info("get_split_time_info")
+    return dict(ir["SplitTimeInfo"])
 
 
 @mcp.tool()
 @with_iracing
-def cam_switch(
+async def cam_switch(
     ctx: Context,
     group_number: Annotated[
         int | None,
@@ -268,7 +268,7 @@ def cam_switch(
     """
     switch camera
     """
-    ctx.info(f"cam_switch: {group_number}, {car_number_raw}, {position}")
+    await ctx.info(f"cam_switch: {group_number}, {car_number_raw}, {position}")
     if group_number is None:
         group_number = ir["CamGroupNumber"]
     if car_number_raw is not None:
@@ -285,7 +285,7 @@ def cam_switch(
 
 @mcp.tool()
 @with_iracing
-def pit_command(
+async def pit_command(
     ctx: Context,
     commands_and_values: Annotated[
         list[PitCommand],
@@ -332,7 +332,7 @@ def pit_command(
     """
     apply pit command. before apply pit command, you should call get_current_pit_service_status.
     """
-    ctx.info(f"pit_command: {commands_and_values}")
+    await ctx.info(f"pit_command: {commands_and_values}")
     command_mode = {
         "clear_all_services": PitCommandMode.clear,
         "tear_off_windshield": PitCommandMode.ws,
@@ -354,7 +354,7 @@ def pit_command(
 
 @mcp.tool()
 @with_iracing
-def replay_search(
+async def replay_search(
     ctx: Context,
     search_commands: Annotated[
         list[ReplaySearchCommand],
@@ -394,7 +394,7 @@ def replay_search(
     """
     search replay
     """
-    ctx.info(f"replay_search: {search_commands}")
+    await ctx.info(f"replay_search: {search_commands}")
     search_mode = {
         "to_start": RpySrchMode.to_start,
         "to_end": RpySrchMode.to_end,
@@ -413,7 +413,7 @@ def replay_search(
 
 @mcp.tool()
 @with_iracing
-def get_leaderboard(ctx: Context) -> list:
+async def get_leaderboard(ctx: Context) -> list:
     """
     get leaderboard
 
@@ -451,52 +451,52 @@ def get_leaderboard(ctx: Context) -> list:
         - is_missing_start: bool
         - is_towing: bool
     """
-    ctx.info("get_leaderboard")
+    await ctx.info("get_leaderboard")
     return get_leaderboard_(ir)
 
 
 @mcp.tool()
 @with_iracing
-def get_current_pit_service_status(ctx: Context) -> list[str]:
+async def get_current_pit_service_status(ctx: Context) -> list[str]:
     """
     get current pit service status
 
     Returns:
         list[str]: current pit service status
     """
-    ctx.info("get_current_pit_service_status")
+    await ctx.info("get_current_pit_service_status")
     return _bitmask_names(PitSvFlags, ir["PitSvFlags"])
 
 
 @mcp.tool()
 @with_iracing
-def get_current_engine_warnings(ctx: Context) -> list[str]:
+async def get_current_engine_warnings(ctx: Context) -> list[str]:
     """
     get current engine warnings
 
     Returns:
         list[str]: current engine warnings
     """
-    ctx.info("get_current_engine_warnings")
+    await ctx.info("get_current_engine_warnings")
     return _bitmask_names(EngineWarnings, ir["EngineWarnings"])
 
 
 @mcp.tool()
 @with_iracing
-def get_current_flags(ctx: Context) -> list[str]:
+async def get_current_flags(ctx: Context) -> list[str]:
     """
     get current flags
 
     Returns:
         list[str]: current flags
     """
-    ctx.info("get_current_flags")
+    await ctx.info("get_current_flags")
     return _bitmask_names(Flags, ir["SessionFlags"])
 
 
 @mcp.tool()
 @with_iracing
-def get_current_camera_status(ctx: Context) -> dict:
+async def get_current_camera_status(ctx: Context) -> dict:
     """
     get current camera status
 
@@ -506,7 +506,7 @@ def get_current_camera_status(ctx: Context) -> dict:
         - camera_group_number: int
         - camera_number: int
     """
-    ctx.info("get_current_camera_status")
+    await ctx.info("get_current_camera_status")
     return {
         "target_car_idx": ir["CamCarIdx"],
         "camera_group_number": ir["CamGroupNumber"],
